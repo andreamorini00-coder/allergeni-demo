@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IdeaLab · Demo Allergeni</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Bricolage Grotesque', sans-serif; background: #fafaf8; color: #111827; }
+    .app { max-width: 700px; margin: 0 auto; }
+
+    /* HEADER */
+    .header { background: white; border-bottom: 1px solid #e5e7eb; padding: 14px 16px; position: sticky; top: 0; z-index: 10; }
+    .header-sub { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 3px; color: #9ca3af; text-transform: uppercase; margin-bottom: 3px; }
+    .header-row { display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 22px; font-weight: 800; color: #111827; }
+    .header-reg { font-family: 'DM Mono', monospace; font-size: 8px; color: #9ca3af; }
+
+    /* NAV */
+    .nav { display: flex; gap: 6px; padding: 10px 16px; background: white; border-bottom: 1px solid #f3f4f6; align-items: center; }
+    .nav-btn { padding: 7px 14px; border-radius: 8px; border: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; transition: all .18s; }
+    .nav-btn.active { background: #111827; color: white; }
+    .nav-btn.inactive { background: #f3f4f6; color: #6b7280; }
+    .nav-count { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 10px; color: #9ca3af; text-align: right; }
+
+    /* TOAST SALVATAGGIO */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #111827; color: white; border-radius: 10px; padding: 10px 18px; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700; opacity: 0; transition: all .25s; z-index: 50; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* PAGINA */
+    .page { padding: 14px 16px; display: none; }
+    .page.active { display: block; }
+
+    /* RICERCA */
+    .search { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; color: #111827; outline: none; background: white; margin-bottom: 10px; }
+    .search:focus { border-color: #111827; }
+
+    /* FILTRI CATEGORIA */
+    .filtri { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filtro-btn { padding: 5px 12px; border-radius: 20px; border: none; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer; transition: all .18s; }
+    .filtro-btn.active { background: #111827; color: white; }
+    .filtro-btn.inactive { background: #f3f4f6; color: #6b7280; }
+
+    /* CATEGORIA LABEL */
+    .cat-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; padding-left: 4px; margin-top: 14px; }
+
+    /* PRODOTTO CARD */
+    .prodotto-card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 12px 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .prodotto-info { flex: 1; }
+    .prodotto-nome { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .badge-custom { background: #eff6ff; color: #2563eb; border-radius: 4px; padding: 1px 6px; font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 700; }
+    .badge-modificato { background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 700; }
+    .allergeni-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+    .pill { background: #fff8e0; color: #92400e; border-radius: 4px; padding: 1px 6px; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 700; }
+    .pill-none { font-family: 'DM Mono', monospace; font-size: 9px; color: #9ca3af; }
+    .prodotto-azioni { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-etichetta { background: #111827; color: white; border: none; border-radius: 8px; padding: 7px 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 11px; cursor: pointer; }
+    .btn-modifica { background: #f3f4f6; color: #374151; border: none; border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer; }
+    .btn-elimina { background: #fef2f2; color: #ef4444; border: none; border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer; }
+
+    /* FORM NUOVO / MODIFICA */
+    .form-card { background: white; border-radius: 14px; border: 1px solid #e5e7eb; padding: 20px; }
+    .form-card h2 { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 16px; }
+    .form-label { font-family: 'DM Mono', monospace; font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+    .form-input { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 10px 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; color: #111827; outline: none; margin-bottom: 14px; }
+    .form-input:focus { border-color: #111827; }
+    .form-select { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 10px 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; color: #111827; outline: none; margin-bottom: 14px; background: white; }
+    .form-textarea { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 10px 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; color: #111827; outline: none; resize: vertical; margin-bottom: 14px; }
+    .preview-allergeni { background: #f8fafc; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+    .preview-title { font-family: 'DM Mono', monospace; font-size: 9px; color: #2563eb; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .form-azioni { display: flex; gap: 10px; }
+    .btn-annulla { flex: 1; background: #f3f4f6; color: #6b7280; border: none; border-radius: 10px; padding: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .btn-salva { flex: 2; background: #111827; color: white; border: none; border-radius: 10px; padding: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .btn-salva:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+    .btn-ripristina { width: 100%; margin-top: 10px; background: #fffbeb; color: #92400e; border: 1.5px dashed #f59e0b; border-radius: 10px; padding: 11px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; display: none; }
+
+    /* ETICHETTA */
+    .btn-back { background: transparent; border: none; font-family: 'DM Mono', monospace; font-size: 11px; color: #6b7280; cursor: pointer; margin-bottom: 12px; padding: 0; }
+    .allergeni-manuali { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 14px; margin-bottom: 12px; }
+    .allergeni-manuali-title { font-family: 'DM Mono', monospace; font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .allergeni-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .all-btn { padding: 5px 10px; border-radius: 20px; border: 1.5px solid #e5e7eb; background: #fafafa; color: #9ca3af; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer; transition: all .18s; }
+    .all-btn.auto { border-color: #f59e0b; background: #fff8e0; color: #92400e; cursor: default; }
+    .all-btn.manuale { border-color: #059669; background: #ecfdf5; color: #065f46; }
+    .allergeni-hint { font-family: 'DM Mono', monospace; font-size: 8px; color: #9ca3af; margin-top: 8px; }
+
+    .etichetta-box { background: white; border-radius: 14px; border: 2px solid #111827; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .etichetta-header { border-bottom: 2px solid #111827; padding-bottom: 14px; margin-bottom: 14px; }
+    .etichetta-pasticceria { font-size: 20px; font-weight: 800; color: #111827; }
+    .etichetta-indirizzo { font-family: 'DM Mono', monospace; font-size: 10px; color: #6b7280; margin-top: 2px; }
+    .etichetta-prodotto { font-size: 22px; font-weight: 800; color: #111827; margin-bottom: 10px; }
+    .etichetta-ing-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .etichetta-ing { font-size: 12px; color: #374151; line-height: 1.6; margin-bottom: 14px; }
+    .etichetta-allergeni { background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .etichetta-all-title { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .etichetta-all-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .etichetta-pill { background: white; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #92400e; }
+    .etichetta-nessuno { background: #ecfdf5; border: 1.5px solid #059669; border-radius: 10px; padding: 14px; margin-bottom: 14px; font-size: 13px; font-weight: 700; color: #065f46; }
+    .etichetta-footer { display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+    .etichetta-footer span { font-family: 'DM Mono', monospace; font-size: 9px; color: #9ca3af; }
+    .btn-stampa { width: 100%; margin-top: 12px; background: #111827; color: white; border: none; border-radius: 12px; padding: 16px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 15px; cursor: pointer; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .etichetta-box { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div style="background:#7c3aed;color:#fff;text-align:center;padding:9px 16px;font-size:12px;font-weight:700;position:sticky;top:0;z-index:50;font-family:sans-serif">🎯 VERSIONE DEMO — IdeaLab · <a href="https://idealab-app.lovable.app" target="_blank" style="color:#e9d5ff;text-decoration:underline">Acquista la versione completa →</a></div>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header no-print">
+    <div class="header-sub">Demo — Dolce Vita Pasticceria</div>
+    <div class="header-row">
+      <h1>Etichette Allergeni</h1>
+      <span class="header-reg">Reg. UE 1169/2011</span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav no-print">
+    <button class="nav-btn active" onclick="mostraPagina('prodotti')">📋 Prodotti</button>
+    <button class="nav-btn inactive" onclick="showLockedAlert()" style="opacity:.6">➕ Aggiungi 🔒</button>
+    <span class="nav-count" id="nav-count"></span>
+  </div>
+
+  <!-- PAGINA PRODOTTI -->
+  <div class="page active" id="page-prodotti">
+    <input class="search" type="text" placeholder="🔍 Cerca prodotto..." oninput="filtraRicerca(this.value)" />
+    <div class="filtri" id="filtri-container"></div>
+    <div id="lista-prodotti"></div>
+  </div>
+
+  <!-- PAGINA NUOVO / MODIFICA -->
+  <div class="page" id="page-nuovo">
+    <div class="form-card">
+      <h2 id="form-titolo">Nuovo prodotto</h2>
+      <label class="form-label">Nome prodotto</label>
+      <input class="form-input" id="nuovo-nome" type="text" placeholder="Es. Crostata alla ricotta" oninput="aggiornaNuovoPreview()" />
+      <label class="form-label">Categoria</label>
+      <select class="form-select" id="nuovo-cat">
+        <option>Cornetteria</option><option>Lievitati</option><option>Mignon</option>
+        <option selected>Torte</option><option>Basi</option><option>Altro</option>
+      </select>
+      <label class="form-label">Lista ingredienti</label>
+      <textarea class="form-textarea" id="nuovo-ing" rows="5" placeholder="Es. Farina di frumento, uova, burro, latte, zucchero..." oninput="aggiornaNuovoPreview()"></textarea>
+      <div class="preview-allergeni" id="nuovo-preview" style="display:none">
+        <div class="preview-title">🔍 Allergeni rilevati</div>
+        <div class="allergeni-pills" id="nuovo-preview-pills"></div>
+      </div>
+      <div class="form-azioni">
+        <button class="btn-annulla" onclick="annullaForm()">Annulla</button>
+        <button class="btn-salva" id="btn-salva" onclick="salvaProdotto()">✅ Salva prodotto</button>
+      </div>
+      <button class="btn-ripristina" id="btn-ripristina" onclick="ripristinaOriginale()">↺ Ripristina ricetta originale</button>
+    </div>
+  </div>
+
+  <!-- PAGINA ETICHETTA -->
+  <div class="page" id="page-etichetta">
+    <button class="btn-back no-print" onclick="mostraPagina('prodotti')">← Torna ai prodotti</button>
+    <div class="allergeni-manuali no-print">
+      <div class="allergeni-manuali-title">Aggiungi/rimuovi allergeni manualmente</div>
+      <div class="allergeni-grid" id="allergeni-manuali-grid"></div>
+      <div class="allergeni-hint">🟡 AUTO = rilevato automaticamente · 🟢 + = aggiunto manualmente</div>
+    </div>
+    <div class="etichetta-box" id="etichetta-box"></div>
+    <button class="btn-stampa no-print" onclick="window.print()">🖨️ Stampa etichetta</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">💾 Salvato automaticamente</div>
+
+<script>
+// ─── DATI ────────────────────────────────────────────────────────────────────
+const ALLERGENI = [
+  { id:"glutine",       nome:"Glutine",         icona:"🌾", kw:["farina","grano","frumento","farro","kamut","orzo","segale","avena","semola","amido di frumento","malto","brioche","pan di spagna"] },
+  { id:"crostacei",     nome:"Crostacei",        icona:"🦐", kw:["gambero","aragosta","granchio","astice","scampo"] },
+  { id:"uova",          nome:"Uova",             icona:"🥚", kw:["uovo","uova","tuorlo","albume","lecitina di uovo","ovoprodotti","meringa"] },
+  { id:"pesce",         nome:"Pesce",            icona:"🐟", kw:["pesce","merluzzo","salmone","tonno","acciuga","sardina"] },
+  { id:"arachidi",      nome:"Arachidi",         icona:"🥜", kw:["arachide","arachidi","burro di arachidi"] },
+  { id:"soia",          nome:"Soia",             icona:"🫘", kw:["soia","lecitina di soia","tofu"] },
+  { id:"latte",         nome:"Latte",            icona:"🥛", kw:["latte","panna","burro","formaggio","mozzarella","ricotta","yogurt","lattosio","caseina","siero di latte","mascarpone","crema di latte","panna fresca","pannasù"] },
+  { id:"frutta_guscio", nome:"Frutta a guscio",  icona:"🌰", kw:["noce","nocciola","mandorla","pistacchio","anacardo","pecan","noci","nocciole","mandorle","pistacchi","pinoli","granella di nocciole","pasta di nocciole","pasta di pistacchio","frangipane"] },
+  { id:"sedano",        nome:"Sedano",           icona:"🥬", kw:["sedano","celeriac"] },
+  { id:"senape",        nome:"Senape",           icona:"🟡", kw:["senape","mostarda"] },
+  { id:"sesamo",        nome:"Sesamo",           icona:"🌿", kw:["sesamo","tahini"] },
+  { id:"solfiti",       nome:"Solfiti",          icona:"🍷", kw:["solfito","anidride solforosa","e220","vino","aceto di vino","marsala","rum"] },
+  { id:"lupini",        nome:"Lupini",           icona:"🌱", kw:["lupino","lupini","farina di lupino"] },
+  { id:"molluschi",     nome:"Molluschi",        icona:"🦑", kw:["mollusco","cozza","vongola","calamaro","polpo"] },
+];
+
+const PRODOTTI_BASE = [
+  { id:1,  cat:"Cornetteria", nome:"Cornetto vuoto",          ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, vaniglia naturale, lecitina di soia" },
+  { id:2,  cat:"Cornetteria", nome:"Cornetto alla crema",     ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, vaniglia naturale, lecitina di soia, crema pasticciera (latte, uova, zucchero, farina, vaniglia)" },
+  { id:3,  cat:"Cornetteria", nome:"Cornetto al cioccolato",  ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, vaniglia naturale, lecitina di soia, crema al cioccolato (cacao, latte, zucchero, burro)" },
+  { id:4,  cat:"Cornetteria", nome:"Cornetto alla marmellata",ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, vaniglia naturale, lecitina di soia, marmellata di albicocche" },
+  { id:5,  cat:"Lievitati",   nome:"Maritozzo con panna",     ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, vaniglia, panna fresca 35%, zucchero a velo" },
+  { id:6,  cat:"Lievitati",   nome:"Bomba alla crema",        ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, olio di semi, crema pasticciera (latte, uova, zucchero, farina, vaniglia), zucchero a velo" },
+  { id:7,  cat:"Lievitati",   nome:"Ciambella fritta",        ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero semolato, lievito di birra, sale, olio di semi di girasole" },
+  { id:8,  cat:"Mignon",      nome:"Bottoncini salati",       ing:"Farina di frumento, burro, uova, sale, lievito chimico, formaggio, semi di sesamo" },
+  { id:9,  cat:"Mignon",      nome:"Bignè alla crema",        ing:"Farina di frumento, burro, uova, acqua, sale, latte, zucchero, vaniglia" },
+  { id:10, cat:"Mignon",      nome:"Tartelletta alla frutta", ing:"Farina di frumento, burro, uova, zucchero, sale, crema pasticciera (latte, uova, zucchero, farina, vaniglia), frutta fresca di stagione, gelatina" },
+  { id:11, cat:"Mignon",      nome:"Cannoncino alla crema",   ing:"Farina di frumento, burro, uova, sale, acqua, panna fresca, zucchero, vaniglia" },
+  { id:12, cat:"Torte",       nome:"Tiramisù classico",       ing:"Mascarpone, uova fresche, zucchero semolato, savoiardi (farina di frumento, uova, zucchero), caffè espresso, cacao amaro" },
+  { id:13, cat:"Torte",       nome:"Tiramisù alle fragole",   ing:"Mascarpone, uova fresche, zucchero semolato, savoiardi (farina di frumento, uova, zucchero), fragole fresche, succo di limone, cacao amaro" },
+  { id:14, cat:"Torte",       nome:"Sacher",                  ing:"Farina di frumento, cioccolato fondente 70%, burro, uova, zucchero, cacao amaro, marmellata di albicocche, panna fresca" },
+  { id:15, cat:"Torte",       nome:"Cheesecake",              ing:"Biscotti secchi (farina di frumento, zucchero, burro), burro, ricotta, panna fresca, uova, zucchero, succo di limone, vaniglia, gelatina" },
+  { id:16, cat:"Torte",       nome:"Tre cioccolati",          ing:"Cioccolato fondente 70%, cioccolato al latte, cioccolato bianco, panna fresca, burro, uova, zucchero, farina di frumento, gelatina" },
+  { id:17, cat:"Torte",       nome:"Millefoglie classico",    ing:"Farina di frumento, burro, acqua, sale, latte, uova, zucchero, vaniglia, panna fresca" },
+  { id:18, cat:"Torte",       nome:"Millefoglie fragole",     ing:"Farina di frumento, burro, acqua, sale, latte, uova, zucchero, vaniglia, panna fresca, fragole fresche" },
+  { id:19, cat:"Torte",       nome:"Red Velvet",              ing:"Farina di frumento, burro, uova, latte, zucchero, cacao, bicarbonato, aceto, formaggio spalmabile, panna fresca, zucchero a velo" },
+  { id:20, cat:"Torte",       nome:"Lemon Tart",              ing:"Farina di frumento, burro, uova, zucchero, succo di limone, scorza di limone, panna fresca, albume d'uovo" },
+  { id:21, cat:"Torte",       nome:"Pavlova",                 ing:"Albume d'uovo, zucchero semolato, amido di mais, aceto di vino bianco, panna fresca 35%, frutta fresca di stagione" },
+  { id:22, cat:"Torte",       nome:"Montblanc",               ing:"Castagne, panna fresca, zucchero, vaniglia, albume d'uovo, farina di frumento, burro, uova" },
+  { id:23, cat:"Torte",       nome:"Caprese",                 ing:"Mandorle, cioccolato fondente, burro, uova, zucchero, lievito" },
+  { id:24, cat:"Torte",       nome:"Torta Gelato",            ing:"Pan di spagna (farina di frumento, uova, zucchero), gelato artigianale (latte, panna, zucchero, uova), panna fresca, biscotti" },
+  { id:25, cat:"Basi",        nome:"Pan di Spagna",           ing:"Uova fresche, zucchero semolato, farina di frumento tipo 00, fecola di patate, vaniglia naturale" },
+  { id:26, cat:"Basi",        nome:"Pasta frolla",            ing:"Farina di frumento tipo 00, burro, uova, zucchero a velo, sale, vaniglia, lievito chimico" },
+  { id:27, cat:"Basi",        nome:"Pasta sfoglia",           ing:"Farina di frumento tipo 00, burro, acqua, sale" },
+  { id:28, cat:"Basi",        nome:"Crema pasticciera",       ing:"Latte intero, uova fresche, zucchero semolato, farina di frumento, vaniglia naturale" },
+  { id:29, cat:"Basi",        nome:"Crema al burro",          ing:"Burro, zucchero a velo, uova, vaniglia, latte" },
+  { id:30, cat:"Basi",        nome:"Impasto bombe/krapfen",   ing:"Farina di frumento tipo 00, burro, uova fresche, latte intero, zucchero, lievito di birra, sale" },
+];
+
+// ─── STORAGE (salvataggio automatico) ────────────────────────────────────────
+const STORAGE_KEY = "idealab_demo_allergeni_v1";
+
+function salvaStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prodotti));
+    mostraToast();
+  } catch (e) {
+    console.warn("Salvataggio non disponibile:", e);
+  }
+}
+
+function caricaStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) {
+        // Aggiunge eventuali nuovi prodotti base non ancora presenti (aggiornamenti futuri)
+        PRODOTTI_BASE.forEach(b => {
+          if (!arr.some(p => p.id === b.id)) arr.push({ ...b });
+        });
+        return arr;
+      }
+    }
+  } catch (e) {
+    console.warn("Lettura storage fallita:", e);
+  }
+  return PRODOTTI_BASE.map(p => ({ ...p }));
+}
+
+let toastTimer = null;
+function mostraToast() {
+  const t = document.getElementById("toast");
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1300);
+}
+
+// ─── STATO ───────────────────────────────────────────────────────────────────
+let prodotti = caricaStorage();
+let categoriaAttiva = "Tutti";
+let ricercaAttiva = "";
+let prodottoCorrente = null;
+let allergeniManuali = [];
+let editId = null; // null = nuovo prodotto, altrimenti id del prodotto in modifica
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function detectAllergeni(ing) {
+  const lower = ing.toLowerCase();
+  return ALLERGENI.filter(a => a.kw.some(k => lower.includes(k))).map(a => a.id);
+}
+
+function getAllCategorie() {
+  return [...new Set(prodotti.map(p => p.cat))];
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderFiltri() {
+  const container = document.getElementById("filtri-container");
+  const cats = ["Tutti", ...getAllCategorie()];
+  container.innerHTML = cats.map(c => `
+    <button class="filtro-btn ${c === categoriaAttiva ? 'active' : 'inactive'}" onclick="filtraCategoria('${c}')">${c}</button>
+  `).join("");
+}
+
+function renderLista() {
+  const container = document.getElementById("lista-prodotti");
+  const filtrati = prodotti.filter(p => {
+    const mR = p.nome.toLowerCase().includes(ricercaAttiva.toLowerCase());
+    const mC = categoriaAttiva === "Tutti" || p.cat === categoriaAttiva;
+    return mR && mC;
+  });
+
+  if (filtrati.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:#9ca3af;font-family:'DM Mono',monospace;font-size:12px">Nessun prodotto trovato</div>`;
+    return;
+  }
+
+  const cats = [...new Set(filtrati.map(p => p.cat))];
+  container.innerHTML = cats.map(cat => {
+    const ps = filtrati.filter(p => p.cat === cat);
+    return `
+      <div class="cat-label">${cat}</div>
+      ${ps.map(p => {
+        const alls = detectAllergeni(p.ing);
+        const pillsHtml = alls.length === 0
+          ? `<span class="pill-none">Nessun allergene rilevato</span>`
+          : alls.map(id => { const a = ALLERGENI.find(x=>x.id===id); return `<span class="pill">${a.icona} ${a.nome}</span>`; }).join("");
+        return `
+          <div class="prodotto-card">
+            <div class="prodotto-info">
+              <div class="prodotto-nome">
+                ${p.nome}
+                ${p.custom ? '<span class="badge-custom">CUSTOM</span>' : ''}
+                ${!p.custom && p.modificato ? '<span class="badge-modificato">MODIFICATO</span>' : ''}
+              </div>
+              <div class="allergeni-pills">${pillsHtml}</div>
+            </div>
+            <div class="prodotto-azioni">
+              <button class="btn-etichetta" onclick="apriEtichetta(${p.id})">🏷️ Etichetta</button>
+              <button class="btn-modifica" onclick="apriModifica(${p.id})" title="Modifica">✏️</button>
+              ${p.custom ? `<button class="btn-elimina" onclick="eliminaProdotto(${p.id})" title="Elimina">🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    `;
+  }).join("");
+
+  aggiornaCount();
+}
+
+function aggiornaCount() {
+  const nCustom = prodotti.filter(p=>p.custom).length;
+  const nMod = prodotti.filter(p=>!p.custom && p.modificato).length;
+  document.getElementById("nav-count").textContent =
+    `${prodotti.length} prodotti · ${nCustom} custom · ${nMod} modificati`;
+}
+
+// ─── NAVIGAZIONE ─────────────────────────────────────────────────────────────
+function mostraPagina(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navMap = { prodotti: 0, nuovo: 1 };
+  if (navMap[id] !== undefined) {
+    document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
+    document.querySelectorAll('.nav-btn')[navMap[id]].classList.remove('inactive');
+    document.querySelectorAll('.nav-btn').forEach((b, i) => { if(i !== navMap[id]) b.classList.add('inactive'); });
+  }
+  if (id === 'prodotti') { renderFiltri(); renderLista(); }
+}
+
+function filtraCategoria(cat) {
+  categoriaAttiva = cat;
+  renderFiltri();
+  renderLista();
+}
+
+function filtraRicerca(val) {
+  ricercaAttiva = val;
+  renderLista();
+}
+
+// ─── FORM: NUOVO / MODIFICA ──────────────────────────────────────────────────
+function resetForm() {
+  editId = null;
+  document.getElementById("form-titolo").textContent = "Nuovo prodotto";
+  document.getElementById("btn-salva").textContent = "✅ Salva prodotto";
+  document.getElementById("nuovo-nome").value = "";
+  document.getElementById("nuovo-ing").value = "";
+  document.getElementById("nuovo-cat").value = "Torte";
+  document.getElementById("nuovo-preview").style.display = "none";
+  document.getElementById("btn-ripristina").style.display = "none";
+}
+
+function apriNuovo() {
+  resetForm();
+  mostraPagina('nuovo');
+}
+
+function apriModifica(id) {
+  const p = prodotti.find(x => x.id === id);
+  if (!p) return;
+  editId = id;
+  document.getElementById("form-titolo").textContent = `Modifica: ${p.nome}`;
+  document.getElementById("btn-salva").textContent = "💾 Salva modifiche";
+  document.getElementById("nuovo-nome").value = p.nome;
+  document.getElementById("nuovo-ing").value = p.ing;
+
+  // Se la categoria non è tra le opzioni, la aggiunge
+  const sel = document.getElementById("nuovo-cat");
+  if (![...sel.options].some(o => o.value === p.cat)) {
+    const o = document.createElement("option");
+    o.value = o.textContent = p.cat;
+    sel.appendChild(o);
+  }
+  sel.value = p.cat;
+
+  // Pulsante ripristino: visibile solo per prodotti base già modificati
+  const orig = PRODOTTI_BASE.find(x => x.id === id);
+  document.getElementById("btn-ripristina").style.display =
+    (orig && !p.custom && p.modificato) ? "block" : "none";
+
+  aggiornaNuovoPreview();
+  mostraPagina('nuovo');
+}
+
+function annullaForm() {
+  resetForm();
+  mostraPagina('prodotti');
+}
+
+function salvaProdotto() {
+  const nome = document.getElementById("nuovo-nome").value.trim();
+  const cat = document.getElementById("nuovo-cat").value;
+  const ing = document.getElementById("nuovo-ing").value.trim();
+  if (!nome || !ing) return;
+
+  if (editId !== null) {
+    // MODIFICA prodotto esistente
+    const p = prodotti.find(x => x.id === editId);
+    if (p) {
+      p.nome = nome;
+      p.cat = cat;
+      p.ing = ing;
+      if (!p.custom) {
+        const orig = PRODOTTI_BASE.find(x => x.id === editId);
+        // Flag MODIFICATO solo se diverso dall'originale
+        p.modificato = !(orig && orig.nome === nome && orig.cat === cat && orig.ing === ing);
+        if (!p.modificato) delete p.modificato;
+      }
+    }
+  } else {
+    // NUOVO prodotto custom
+    prodotti.push({ id: Date.now(), cat, nome, ing, custom: true });
+  }
+
+  salvaStorage();
+  resetForm();
+  mostraPagina('prodotti');
+}
+
+function ripristinaOriginale() {
+  const orig = PRODOTTI_BASE.find(x => x.id === editId);
+  if (!orig) return;
+  if (!confirm(`Ripristinare la ricetta originale di "${orig.nome}"?`)) return;
+  const idx = prodotti.findIndex(x => x.id === editId);
+  if (idx !== -1) prodotti[idx] = { ...orig };
+  salvaStorage();
+  resetForm();
+  mostraPagina('prodotti');
+}
+
+function eliminaProdotto(id) {
+  if (confirm("Eliminare questo prodotto?")) {
+    prodotti = prodotti.filter(p => p.id !== id);
+    salvaStorage();
+    renderLista();
+    renderFiltri();
+    aggiornaCount();
+  }
+}
+
+function aggiornaNuovoPreview() {
+  const ing = document.getElementById("nuovo-ing").value;
+  const preview = document.getElementById("nuovo-preview");
+  const pills = document.getElementById("nuovo-preview-pills");
+  if (ing.length < 10) { preview.style.display = "none"; return; }
+  const alls = detectAllergeni(ing);
+  preview.style.display = "block";
+  if (alls.length === 0) {
+    pills.innerHTML = `<span class="pill-none">Nessuno rilevato</span>`;
+  } else {
+    pills.innerHTML = alls.map(id => { const a = ALLERGENI.find(x=>x.id===id); return `<span class="pill">${a.icona} ${a.nome}</span>`; }).join("");
+  }
+}
+
+// ─── ETICHETTA ───────────────────────────────────────────────────────────────
+function apriEtichetta(id) {
+  prodottoCorrente = prodotti.find(p => p.id === id);
+  allergeniManuali = [];
+  renderEtichetta();
+  mostraPagina('etichetta');
+  document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
+}
+
+function toggleManuale(id) {
+  const rilevato = detectAllergeni(prodottoCorrente.ing).includes(id);
+  if (rilevato) return;
+  if (allergeniManuali.includes(id)) {
+    allergeniManuali = allergeniManuali.filter(x => x !== id);
+  } else {
+    allergeniManuali.push(id);
+  }
+  renderEtichetta();
+}
+
+function renderEtichetta() {
+  if (!prodottoCorrente) return;
+  const rilevati = detectAllergeni(prodottoCorrente.ing);
+  const finali = [...new Set([...rilevati, ...allergeniManuali])];
+
+  // Grid allergeni manuali
+  document.getElementById("allergeni-manuali-grid").innerHTML = ALLERGENI.map(a => {
+    const isR = rilevati.includes(a.id);
+    const isM = allergeniManuali.includes(a.id);
+    let cls = "all-btn";
+    if (isR) cls += " auto";
+    else if (isM) cls += " manuale";
+    const extra = isR ? " AUTO" : isM ? " +" : "";
+    return `<button class="${cls}" onclick="toggleManuale('${a.id}')">${a.icona} ${a.nome}${extra}</button>`;
+  }).join("");
+
+  // Etichetta
+  const allHtml = finali.length === 0
+    ? `<div class="etichetta-nessuno">✅ Nessun allergene rilevato</div>`
+    : `<div class="etichetta-allergeni">
+        <div class="etichetta-all-title">⚠️ Contiene allergeni</div>
+        <div class="etichetta-all-pills">
+          ${finali.map(id => { const a = ALLERGENI.find(x=>x.id===id); return `<span class="etichetta-pill">${a.icona} ${a.nome}</span>`; }).join("")}
+        </div>
+      </div>`;
+
+  document.getElementById("etichetta-box").innerHTML = `
+    <div class="etichetta-header">
+      <div class="etichetta-pasticceria">Pasticceria Artigianale Fagotti</div>
+      <div class="etichetta-indirizzo">Via della Giustiniana, 81 · Roma · P.IVA 16205051002</div>
+    </div>
+    <div class="etichetta-prodotto">${prodottoCorrente.nome}</div>
+    <div class="etichetta-ing-label">Ingredienti</div>
+    <div class="etichetta-ing">${prodottoCorrente.ing}</div>
+    ${allHtml}
+    <div class="etichetta-footer">
+      <span>Generato il ${new Date().toLocaleDateString("it-IT")}</span>
+      <span>Reg. UE 1169/2011</span>
+    </div>
+  `;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderFiltri();
+renderLista();
+// DEMO: limita ai primi 6 prodotti base e blocca azioni
+const PRODOTTI_ORIGINALI = PRODOTTI_BASE.map(p => ({...p}));
+const PRODOTTI_DEMO_IDS = PRODOTTI_ORIGINALI.slice(0,6).map(p => p.id);
+
+function showLockedAlert(){
+  const el = document.getElementById("locked-modal");
+  if(el) el.style.display="flex";
+}
+function hideLockedAlert(){
+  const el = document.getElementById("locked-modal");
+  if(el) el.style.display="none";
+}
+
+// Override caricaStorage per mostrare solo 6 prodotti demo
+const originalCarica = caricaStorage;
+prodotti = PRODOTTI_ORIGINALI.filter(p => PRODOTTI_DEMO_IDS.includes(p.id));
+
+// Override eliminaProdotto per bloccarla
+function eliminaProdotto(id){ showLockedAlert(); }
+// Override salvaProdotto per bloccarla
+function salvaProdotto(){ showLockedAlert(); }
+// Override apriNuovo per bloccarla
+function apriNuovo(){ showLockedAlert(); }
+// Override apriModifica per bloccarla
+function apriModifica(id){ showLockedAlert(); }
+
+mostraPagina("prodotti");
+</script>
+<div id="locked-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)hideLockedAlert()">
+  <div style="background:#fff;border-radius:16px;padding:28px;max-width:340px;width:100%;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-size:16px;font-weight:800;color:#111827;margin-bottom:8px">Funzione Pro</div>
+    <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:18px">Aggiungere, modificare ed eliminare prodotti è disponibile nella versione completa di IdeaLab.<br><br>La versione Demo include 6 prodotti di esempio.</p>
+    <a href="https://idealab-app.lovable.app" target="_blank" style="display:block;background:#7c3aed;color:#fff;padding:12px;border-radius:10px;font-weight:700;text-decoration:none;margin-bottom:10px;font-size:14px">Scopri IdeaLab Pro →</a>
+    <button onclick="hideLockedAlert()" style="width:100%;padding:10px;border:none;border-radius:10px;background:#f3f4f6;color:#6b7280;font-weight:700;cursor:pointer;font-size:14px">Chiudi</button>
+  </div>
+</div>
+</body>
+</html>
